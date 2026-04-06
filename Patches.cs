@@ -21,8 +21,8 @@ namespace MaskFixes
 
         const int PURPLE_SUIT_ID = 24;
 
-        static readonly List<int> suitIndices =
-        [
+        static readonly List<int> suitIndices = new List<int>
+        {
              0, // orange
              1, // green
              2, // hazard
@@ -30,7 +30,7 @@ namespace MaskFixes
             PURPLE_SUIT_ID,
             25, // bee
             26  // bunny
-        ];
+        };
 
         [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.Awake))]
         [HarmonyPostfix]
@@ -700,13 +700,23 @@ namespace MaskFixes
 
             MethodInfo killPlayer = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.KillPlayer));
             MethodInfo zero = AccessTools.DeclaredPropertyGetter(typeof(Vector3), nameof(Vector3.zero));
-            for (int i = 7; i < codes.Count; i++)
+            
+            for (int i = 0; i < codes.Count; i++)
             {
-                if (codes[i].opcode == OpCodes.Callvirt && (MethodInfo)codes[i].operand == killPlayer && codes[i - 7].opcode == OpCodes.Call && (MethodInfo)codes[i - 7].operand == zero && codes[i - 6].opcode == OpCodes.Ldc_I4_0)
+                if (codes[i].opcode == OpCodes.Callvirt && (MethodInfo)codes[i].operand == killPlayer)
                 {
-                    codes[i - 6].opcode = OpCodes.Ldc_I4_1;
-                    Plugin.Logger.LogDebug("Transpiler (Mimic kill): Spawn body");
-                    return codes;
+                    for (int j = i - 1; j >= 0; j--)
+                    {
+                        if (codes[j].opcode == OpCodes.Call && (MethodInfo)codes[j].operand == zero)
+                        {
+                            if (codes[j + 1].opcode == OpCodes.Ldc_I4_0)
+                            {
+                                codes[j + 1].opcode = OpCodes.Ldc_I4_1;
+                                Plugin.Logger.LogDebug("transpiler fixed");
+                                return codes;
+                            }
+                        }
+                    }
                 }
             }
 
